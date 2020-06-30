@@ -6,7 +6,7 @@ import numpy as np
 from keras.models import load_model
 import joblib
 import firebase_admin
-from firebase_admin import credentials, firestore, storage, db
+from firebase_admin import credentials,storage, db
 from sklearn import svm, metrics, preprocessing
 import string
 import random
@@ -17,11 +17,13 @@ out_encoder.fit(label)
 
 joblib_model = joblib.load('svm_model.pkl')
 model = load_model('facenet_keras.h5', compile=False)
-cred = credentials.Certificate("/home/minh/Downloads/project-3d6b7-firebase-adminsdk-vrh3t-c5123e378f.json")
+cred = credentials.Certificate("project-3d6b7-firebase-adminsdk-vrh3t-c5123e378f.json")
 firebase_admin.initialize_app(cred, {
     'storageBucket': 'project-3d6b7.appspot.com',
     'databaseURL': 'https://project-3d6b7.firebaseio.com/'
 })
+
+
 def randomString(stringLength=8):
     letters = string.ascii_lowercase
     return ''.join(random.choice(letters) for i in range(stringLength))
@@ -34,13 +36,23 @@ def get_face_embedded(model, image):
     return y[0]
 
 
+ref = db.reference('TKPgrEeAUKUShLKgKGWG7dIktCT2/Device/')
+img_item = "strange.png"
+bucket = storage.bucket()
+path = randomString()
+blob = bucket.blob('TKPgrEeAUKUShLKgKGWG7dIktCT2/' + path + '.png')
+outfile = 'strange.png'
+
+
 font = cv2.FONT_HERSHEY_SIMPLEX
 cap = cv2.VideoCapture(0)
 detector = MTCNN()
 # fourcc = cv2.VideoWriter_fourcc(*'XVID')
 # out = cv2.VideoWriter('output.avi', fourcc, 20.0, (640,480))
 frame_id = 0
-n=0
+wrong=0
+correct=0
+i=59
 while True:
     ret, frame = cap.read()
     frame = cv2.flip(frame, 1)
@@ -70,20 +82,25 @@ while True:
                     prob=joblib_model.decision_function(X)
                     prob_max=np.max(prob)
                     prob_max=np.exp(prob_max)/np.sum(np.exp(prob))
-                    print(prob_max)
+                    # print(prob_max)
                     predict_names = out_encoder.inverse_transform(Y)
                     cv2.putText(frame, predict_names[0], (10, 450), font, 3, (0, 255, 0), 2, cv2.LINE_AA)
-                    if predict_names[0]=='Minh' and prob_max>0.7:
-                        ref = db.reference('TKPgrEeAUKUShLKgKGWG7dIktCT2/Device/')
-                        ref.update({'Gate': 1})
-                    else:
-                        img_item = "strange.png"
-                        # cv2.imwrite(img_item, frame_new)
-                        # bucket = storage.bucket()
-                        # path = randomString()
-                        # blob = bucket.blob('TKPgrEeAUKUShLKgKGWG7dIktCT2/' + path + '.png')
-                        # outfile = '/home/minh/PycharmProjects/Untitled Folder/strange.png'
-                        # blob.upload_from_filename(outfile)
+                    # if cv2.waitKey(1) == ord('s'):
+                    #     cv2.imwrite("faces_extracted\\Minh\\" + str(i) + ".jpg", frame_new[y:h,x:w])
+                    #     i += 1
+                    if predict_names[0]=='Minh':
+                        correct+=1
+                        if math.fmod(correct,60)==0:
+                            ref.update({'Gate': 1})
+                            correct=0
+                        wrong=0
+                    else :
+                        wrong+=1
+                        correct=0
+                        if math.fmod(wrong,60)==0:
+                            cv2.imwrite(img_item, frame_new)
+                            blob.upload_from_filename(outfile)
+                            wrong=0
                 except:
                     print()
                 # print(Y)

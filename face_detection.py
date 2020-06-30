@@ -3,10 +3,9 @@ import cv2
 from mtcnn.mtcnn import MTCNN
 
 detector = MTCNN()
-filenames = glob.glob("/home/minh/PycharmProjects/Untitled Folder/faces_raw/Pepe/*")
+filenames = glob.glob("C:\\Users\\Minh\\Desktop\\Face_Regconition\\faces_raw\\Unknown\\*")
 filenames.sort()
 images = [cv2.imread(img) for img in filenames]
-# 8GB Ram moi chay dc neu ko bi loi 137 sigkill 9
 i = 0
 for img in images:
     result = detector.detect_faces(img)
@@ -17,6 +16,9 @@ for img in images:
         w = bounding_box[0] + bounding_box[2]
         h = bounding_box[1] + bounding_box[3]
         face_in_img = img[y:h, x:w]
-        face_in_img = cv2.resize(face_in_img, (160, 160))
-        cv2.imwrite("/home/minh/PycharmProjects/Untitled Folder/faces_extracted/Pepe/" + str(i) + ".jpg", face_in_img)
-        i += 1
+        try:
+            face_in_img = cv2.resize(face_in_img, (160, 160))
+            cv2.imwrite("faces_extracted\\Unknown\\" + str(i) + ".jpg", face_in_img)
+            i += 1
+        except:
+            print("error")
